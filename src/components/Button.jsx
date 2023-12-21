@@ -3,19 +3,19 @@ import { Link } from "react-router-dom";
 function Button({ children, primary, secondary, outline, ...rest }) {
   let primaryStyle = `rounded-lg border-none bg-[#F87060] font-semibold  tracking-wide
   transition-all duration-150 hover:bg-[#F87060] focus:outline-none focus:ring focus:ring-[#F87060] 
-  focus:ring-offset-2 active:bg-[#F87060] disabled:cursor-not-allowed disabled:bg-purple-200 text-zinc-800`;
+  focus:ring-offset-2 active:bg-[#F87060] disabled:cursor-not-allowed disabled:bg-purple-200`;
 
   let primaryOutline = `rounded-lg border border-[#F87060] font-semibold  tracking-wide
   transition-all duration-150 hover:bg-[#F87060] focus:outline-none focus:ring focus:ring-[#F87060] 
   focus:ring-offset-2 active:bg-[#F87060] disabled:cursor-not-allowed disabled:bg-purple-200`;
 
-  let secondaryStyle = `rounded-lg border-none bg-[#b2ebf9] font-semibold  tracking-wide
-  transition-all duration-150 hover:bg-[#92d8e1] focus:outline-none focus:ring focus:ring-[#92d8e1] 
-  focus:ring-offset-2 active:bg-[#72d8e1] disabled:cursor-not-allowed disabled:bg-purple-200 text-zinc-800 `;
+  let secondaryStyle = `rounded-lg border-none bg-[#c63525] font-semibold  tracking-wide
+  transition-all duration-150 hover:bg-[#c63525] focus:outline-none focus:ring focus:ring-[#c63525] 
+  focus:ring-offset-2 active:bg-[#c63525] disabled:cursor-not-allowed disabled:bg-purple-200 `;
 
-  let secondaryOutline = `rounded-lg border border-[#72d8e1] font-semibold  tracking-wide
-  transition-all duration-150 hover:bg-[#92d8e1] focus:outline-none focus:ring focus:ring-[#92d8e1] 
-  focus:ring-offset-2 active:bg-[#72d8e1] disabled:cursor-not-allowed disabled:bg-purple-200 text-zinc-700`;
+  let secondaryOutline = `rounded-lg border border-[#c63525] font-semibold  tracking-wide
+  transition-all duration-150 hover:bg-[#c63525] focus:outline-none focus:ring focus:ring-[#c63525] 
+  focus:ring-offset-2 active:bg-[#c63525] disabled:cursor-not-allowed disabled:bg-purple-200`;
 
   // b2ebf9
   //if button use as a link
