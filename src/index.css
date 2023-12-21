@@ -7,3 +7,32 @@
 body {
   font-family: "Ubuntu", sans-serif;
 }
+
+.option-menu li a.active {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  color: #f87060;
+}
+
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #1f2937 #ccc;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #102542;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #f87060;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #f87060;
+}
