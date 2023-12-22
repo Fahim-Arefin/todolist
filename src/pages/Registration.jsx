@@ -128,9 +128,9 @@ function Registration() {
         <div className="md:col-span-1 lg:col-span-2 flex items-center justify-center">
           <img className="w-[90%] h-[80%]" src="./registration.svg" alt="" />
         </div>
-        <div className="md:col-span-1 lg:col-span-1 bg-white flex justify-center items-center ">
+        <div className="md:col-span-1 lg:col-span-1 flex justify-center items-center ">
           <div className="h-[500px] flex flex-col space-y-6 p-4">
-            <span className="text-xl text-slate-700 font-bold">
+            <span className="text-xl text-[#aea1ea] font-bold">
               Welcome to ProTasker 👋
             </span>
             <p className="text-sm text-gray-400 font-semibold">

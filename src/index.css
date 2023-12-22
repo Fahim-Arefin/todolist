@@ -6,6 +6,7 @@
 
 body {
   font-family: "Ubuntu", sans-serif;
+  background-color: #102542;
 }
 
 .option-menu li a.active {

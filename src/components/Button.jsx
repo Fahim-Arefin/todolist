@@ -10,7 +10,7 @@ function Button({ children, primary, secondary, outline, ...rest }) {
   focus:ring-offset-2 active:bg-[#F87060] disabled:cursor-not-allowed disabled:bg-purple-200`;
 
   let secondaryStyle = `rounded-lg border-none bg-[#c63525] font-semibold  tracking-wide
-  transition-all duration-150 hover:bg-[#c63525] focus:outline-none focus:ring focus:ring-[#c63525] 
+  transition-all duration-150 hover:bg-[#8e2218] focus:outline-none focus:ring focus:ring-[#8e2218] 
   focus:ring-offset-2 active:bg-[#c63525] disabled:cursor-not-allowed disabled:bg-purple-200 `;
 
   let secondaryOutline = `rounded-lg border border-[#c63525] font-semibold  tracking-wide

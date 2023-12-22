@@ -105,7 +105,7 @@ function Login() {
       </div>
       <div className="md:col-span-1 lg:col-span-1 flex justify-center items-center min-h-screen">
         <div className="h-[500px] flex flex-col space-y-6 p-4">
-          <span className="text-xl text-slate-700 font-bold">
+          <span className="text-xl text-[#aea1ea] font-bold">
             Welcome to ProTasker 👋
           </span>
           <p className="text-sm text-gray-400 font-semibold">
@@ -171,7 +171,7 @@ function Login() {
             >
               <div className="flex space-x-2 justify-center">
                 <FcGoogle className="text-2xl" />
-                <span>Sign in with google</span>
+                <span className="text-[#aea1ea]">Sign in with google</span>
               </div>
             </button>
           </div>

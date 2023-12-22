@@ -12,6 +12,9 @@ import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
 function Dashboard() {
   const { baseURL, user, successToast, errorToast } = useAuth();
+  const [editId, setEditId] = useState("");
+  const [editCollection, setEditCollection] = useState("");
+  const [modalRef, setModalRef] = useState("");
 
   const {
     register,
@@ -63,6 +66,7 @@ function Dashboard() {
       const res = await axios.post(`${baseURL}/tasks`, {
         ...data,
         userId: user.uid,
+        createdAt: Date.now(),
       });
       setNewData(res.data);
       setSelected(!selected);
@@ -70,6 +74,31 @@ function Dashboard() {
     } catch (error) {
       console.log(error);
       errorToast("Task Could Not Created !!", 2000);
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    try {
+      e.preventDefault();
+      document.getElementById(modalRef).close();
+      const data = {
+        title: e.target.title.value,
+        description: e.target.description.value,
+        deadline: e.target.deadline.value,
+        priority: e.target.priority.value,
+        userId: user.uid,
+        createdAt: Date.now(),
+      };
+      console.log(editId, editCollection, data);
+      const res = await axios.patch(
+        `${baseURL}/${editCollection}/${editId}`,
+        data
+      );
+      setNewData({ ...res.data });
+      successToast("Task Updated Successful !!", 2000);
+    } catch (error) {
+      console.log(error);
+      errorToast("Task Could Not Updated !!", 2000);
     }
   };
 
@@ -395,7 +424,17 @@ function Dashboard() {
                                     Description
                                   </div>
                                   <div className="flex space-x-1 items-center">
-                                    <div>
+                                    <div
+                                      onClick={() => {
+                                        document
+                                          .getElementById(task.createdAt)
+                                          .showModal();
+                                        setModalRef(task.createdAt);
+                                        setEditId(task._id);
+                                        setEditCollection("tasks");
+                                      }}
+                                      className="hover:cursor-pointer hover:scale-125 active:scale-110 transition-all duration-150"
+                                    >
                                       <img
                                         className="w-5 h-5"
                                         src="/edit.png"
@@ -419,7 +458,8 @@ function Dashboard() {
                               </div>
                             )}
                           </Draggable>
-                          {/* Modal */}
+                          {/* Modals */}
+                          {/* details */}
                           <dialog id={task._id} className="modal text-zinc-950">
                             <div className="modal-box bg-[#F87060]">
                               <form method="dialog">
@@ -434,6 +474,114 @@ function Dashboard() {
                               <p className="py-4">{task.description}</p>
                             </div>
                           </dialog>
+
+                          <dialog
+                            id={task.createdAt}
+                            className="modal text-zinc-950"
+                          >
+                            <div className="modal-box">
+                              <form method="dialog">
+                                {/* if there is a button in form, it will close the modal */}
+                                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                                  ✕
+                                </button>
+                              </form>
+                              <form
+                                onSubmit={handleEditSubmit}
+                                key={task._id}
+                                className="max-w-md mx-auto text-zinc-700"
+                              >
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="title"
+                                  >
+                                    Title:
+                                  </label>
+                                  <input
+                                    defaultValue={task.title}
+                                    type="text"
+                                    id="title"
+                                    name="title"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="description"
+                                  >
+                                    Description:
+                                  </label>
+                                  <textarea
+                                    defaultValue={task.description}
+                                    id="description"
+                                    name="description"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="deadline"
+                                  >
+                                    Deadline:
+                                  </label>
+                                  <input
+                                    defaultValue={task.deadline}
+                                    type="date"
+                                    id="deadline"
+                                    name="deadline"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="priority"
+                                  >
+                                    Priority:
+                                  </label>
+                                  <select
+                                    id="priority"
+                                    name="priority"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                  >
+                                    <option
+                                      selected={task.priority === "low"}
+                                      value="low"
+                                    >
+                                      Low
+                                    </option>
+                                    <option
+                                      selected={task.priority === "moderate"}
+                                      value="moderate"
+                                    >
+                                      Moderate
+                                    </option>
+                                    <option
+                                      selected={task.priority === "high"}
+                                      value="high"
+                                    >
+                                      High
+                                    </option>
+                                  </select>
+                                </div>
+                                <div className="text-center">
+                                  <Button
+                                    secondary
+                                    className="px-4 py-2 text-white"
+                                  >
+                                    Create Task
+                                  </Button>
+                                </div>
+                              </form>
+                            </div>
+                          </dialog>
+                          {/* edit form modal */}
                         </>
                       ))}
                   </Pannel>
@@ -483,7 +631,17 @@ function Dashboard() {
                                     Description
                                   </div>
                                   <div className="flex space-x-1 items-center">
-                                    <div>
+                                    <div
+                                      onClick={() => {
+                                        document
+                                          .getElementById(task.createdAt)
+                                          .showModal();
+                                        setModalRef(task.createdAt);
+                                        setEditId(task._id);
+                                        setEditCollection("ongoing");
+                                      }}
+                                      className="hover:cursor-pointer hover:scale-125 active:scale-110 transition-all duration-150"
+                                    >
                                       <img
                                         className="w-5 h-5"
                                         src="/edit.png"
@@ -520,6 +678,113 @@ function Dashboard() {
                                 {task.title}
                               </h3>
                               <p className="py-4">{task.description}</p>
+                            </div>
+                          </dialog>
+
+                          <dialog
+                            id={task.createdAt}
+                            className="modal text-zinc-950"
+                          >
+                            <div className="modal-box">
+                              <form method="dialog">
+                                {/* if there is a button in form, it will close the modal */}
+                                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                                  ✕
+                                </button>
+                              </form>
+                              <form
+                                onSubmit={handleEditSubmit}
+                                key={task._id}
+                                className="max-w-md mx-auto text-zinc-700"
+                              >
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="title"
+                                  >
+                                    Title:
+                                  </label>
+                                  <input
+                                    defaultValue={task.title}
+                                    type="text"
+                                    id="title"
+                                    name="title"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="description"
+                                  >
+                                    Description:
+                                  </label>
+                                  <textarea
+                                    defaultValue={task.description}
+                                    id="description"
+                                    name="description"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="deadline"
+                                  >
+                                    Deadline:
+                                  </label>
+                                  <input
+                                    defaultValue={task.deadline}
+                                    type="date"
+                                    id="deadline"
+                                    name="deadline"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="priority"
+                                  >
+                                    Priority:
+                                  </label>
+                                  <select
+                                    id="priority"
+                                    name="priority"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                  >
+                                    <option
+                                      selected={task.priority === "low"}
+                                      value="low"
+                                    >
+                                      Low
+                                    </option>
+                                    <option
+                                      selected={task.priority === "moderate"}
+                                      value="moderate"
+                                    >
+                                      Moderate
+                                    </option>
+                                    <option
+                                      selected={task.priority === "high"}
+                                      value="high"
+                                    >
+                                      High
+                                    </option>
+                                  </select>
+                                </div>
+                                <div className="text-center">
+                                  <Button
+                                    secondary
+                                    className="px-4 py-2 text-white"
+                                  >
+                                    Create Task
+                                  </Button>
+                                </div>
+                              </form>
                             </div>
                           </dialog>
                         </>
@@ -571,7 +836,17 @@ function Dashboard() {
                                     Description
                                   </div>
                                   <div className="flex space-x-1 items-center">
-                                    <div>
+                                    <div
+                                      onClick={() => {
+                                        document
+                                          .getElementById(task.createdAt)
+                                          .showModal();
+                                        setModalRef(task.createdAt);
+                                        setEditId(task._id);
+                                        setEditCollection("completed");
+                                      }}
+                                      className="hover:cursor-pointer hover:scale-125 active:scale-110 transition-all duration-150"
+                                    >
                                       <img
                                         className="w-5 h-5"
                                         src="/edit.png"
@@ -608,6 +883,113 @@ function Dashboard() {
                                 {task.title}
                               </h3>
                               <p className="py-4">{task.description}</p>
+                            </div>
+                          </dialog>
+
+                          <dialog
+                            id={task.createdAt}
+                            className="modal text-zinc-950"
+                          >
+                            <div className="modal-box">
+                              <form method="dialog">
+                                {/* if there is a button in form, it will close the modal */}
+                                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                                  ✕
+                                </button>
+                              </form>
+                              <form
+                                onSubmit={handleEditSubmit}
+                                key={task._id}
+                                className="max-w-md mx-auto text-zinc-700"
+                              >
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="title"
+                                  >
+                                    Title:
+                                  </label>
+                                  <input
+                                    defaultValue={task.title}
+                                    type="text"
+                                    id="title"
+                                    name="title"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="description"
+                                  >
+                                    Description:
+                                  </label>
+                                  <textarea
+                                    defaultValue={task.description}
+                                    id="description"
+                                    name="description"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="deadline"
+                                  >
+                                    Deadline:
+                                  </label>
+                                  <input
+                                    defaultValue={task.deadline}
+                                    type="date"
+                                    id="deadline"
+                                    name="deadline"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                    required
+                                  />
+                                </div>
+                                <div className="mb-4">
+                                  <label
+                                    className="block text-gray-600 font-bold mb-2"
+                                    htmlFor="priority"
+                                  >
+                                    Priority:
+                                  </label>
+                                  <select
+                                    id="priority"
+                                    name="priority"
+                                    className="w-full px-4 py-2 border rounded-md focus:outline-none focus:border-blue-500"
+                                  >
+                                    <option
+                                      selected={task.priority === "low"}
+                                      value="low"
+                                    >
+                                      Low
+                                    </option>
+                                    <option
+                                      selected={task.priority === "moderate"}
+                                      value="moderate"
+                                    >
+                                      Moderate
+                                    </option>
+                                    <option
+                                      selected={task.priority === "high"}
+                                      value="high"
+                                    >
+                                      High
+                                    </option>
+                                  </select>
+                                </div>
+                                <div className="text-center">
+                                  <Button
+                                    secondary
+                                    className="px-4 py-2 text-white"
+                                  >
+                                    Create Task
+                                  </Button>
+                                </div>
+                              </form>
                             </div>
                           </dialog>
                         </>
