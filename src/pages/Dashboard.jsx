@@ -575,7 +575,7 @@ function Dashboard() {
                                     secondary
                                     className="px-4 py-2 text-white"
                                   >
-                                    Create Task
+                                    Update Task
                                   </Button>
                                 </div>
                               </form>
@@ -781,7 +781,7 @@ function Dashboard() {
                                     secondary
                                     className="px-4 py-2 text-white"
                                   >
-                                    Create Task
+                                    Update Task
                                   </Button>
                                 </div>
                               </form>
@@ -986,7 +986,7 @@ function Dashboard() {
                                     secondary
                                     className="px-4 py-2 text-white"
                                   >
-                                    Create Task
+                                    Update Task
                                   </Button>
                                 </div>
                               </form>
