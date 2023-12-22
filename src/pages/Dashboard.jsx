@@ -7,6 +7,8 @@ import axios from "axios";
 import Spinner from "../components/Spinner";
 import Swal from "sweetalert2";
 import { ToastContainer } from "react-toastify";
+import { formatRemainingTime } from "../utils/util";
+import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 
 function Dashboard() {
   const { baseURL, user, successToast, errorToast } = useAuth();
@@ -14,19 +16,23 @@ function Dashboard() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm();
 
   const [selected, setSelected] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState([]);
+  const [ongoing, setOngoing] = useState([]);
+  const [completed, setCompleted] = useState([]);
   const [newData, setNewData] = useState(null);
 
   const handleCreate = () => {
     setSelected(!selected);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, collection) => {
+    console.log(id, collection);
     Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -38,7 +44,7 @@ function Dashboard() {
     }).then((result) => {
       if (result.isConfirmed) {
         axios
-          .delete(`${baseURL}/tasks/${id}`)
+          .delete(`${baseURL}/${collection}/${id}`)
           .then((res) => {
             setNewData(res.data);
             successToast("Task delete successful !!", 2000);
@@ -53,6 +59,7 @@ function Dashboard() {
 
   const onSubmit = async (data) => {
     try {
+      reset();
       const res = await axios.post(`${baseURL}/tasks`, {
         ...data,
         userId: user.uid,
@@ -66,12 +73,112 @@ function Dashboard() {
     }
   };
 
+  const handleDragDrop = async (results) => {
+    console.log(results);
+    const { source, destination } = results;
+
+    if (!destination) {
+      return;
+    }
+
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    // drag and drop to the same pannel
+    if (source.droppableId === destination.droppableId) {
+      if (source.droppableId === "tasks") {
+        const reOrderedStore = [...data];
+        const [removedArr] = reOrderedStore.splice(source.index, 1);
+        reOrderedStore.splice(destination.index, 0, removedArr);
+        setData(reOrderedStore);
+        // after drag when data changed then we need to update database
+        await axios.put(`${baseURL}/${source.droppableId}`, {
+          reOrderedStore,
+        });
+      } else if (source.droppableId === "ongoing") {
+        const reOrderedStore = [...ongoing];
+        const [removedArr] = reOrderedStore.splice(source.index, 1);
+        reOrderedStore.splice(destination.index, 0, removedArr);
+        setOngoing(reOrderedStore);
+        // after drag when data changed then we need to update database
+        await axios.put(`${baseURL}/${source.droppableId}`, {
+          reOrderedStore,
+        });
+      } else {
+        const reOrderedStore = [...completed];
+        const [removedArr] = reOrderedStore.splice(source.index, 1);
+        reOrderedStore.splice(destination.index, 0, removedArr);
+        setCompleted(reOrderedStore);
+        // after drag when data changed then we need to update database
+        await axios.put(`${baseURL}/${source.droppableId}`, {
+          reOrderedStore,
+        });
+      }
+    } else {
+      // step 01: Delete source item from database
+      let deletedItem;
+      if (source.droppableId === "tasks") {
+        deletedItem = data[source.index];
+        const updatedData = data.filter((item) => item._id !== deletedItem._id);
+        setData(updatedData);
+        await axios.delete(`${baseURL}/tasks/${deletedItem._id}`);
+      } else if (source.droppableId === "ongoing") {
+        deletedItem = ongoing[source.index];
+        const updatedData = ongoing.filter(
+          (item) => item._id !== deletedItem._id
+        );
+        setOngoing(updatedData);
+        await axios.delete(`${baseURL}/ongoing/${deletedItem._id}`);
+      } else {
+        deletedItem = completed[source.index];
+        const updatedData = completed.filter(
+          (item) => item._id !== deletedItem._id
+        );
+        setCompleted(updatedData);
+        await axios.delete(`${baseURL}/completed/${deletedItem._id}`);
+      }
+
+      // Step 02: Add the item at a perticular place of a perticular droppable
+      if (destination.droppableId === "tasks") {
+        const reOrderedStore = [...data];
+        reOrderedStore.splice(destination.index, 0, deletedItem);
+        setData(reOrderedStore);
+        await axios.put(`${baseURL}/${destination.droppableId}`, {
+          reOrderedStore,
+        });
+      } else if (destination.droppableId === "ongoing") {
+        const reOrderedStore = [...ongoing];
+        reOrderedStore.splice(destination.index, 0, deletedItem);
+        setOngoing(reOrderedStore);
+        await axios.put(`${baseURL}/${destination.droppableId}`, {
+          reOrderedStore,
+        });
+      } else {
+        const reOrderedStore = [...completed];
+        reOrderedStore.splice(destination.index, 0, deletedItem);
+        setCompleted(reOrderedStore);
+        await axios.put(`${baseURL}/${destination.droppableId}`, {
+          reOrderedStore,
+        });
+      }
+    }
+  };
+
+  // fetch for the first time
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const res = await axios.get(`${baseURL}/tasks/${user.uid}`);
-        setData(res.data);
+        const res1 = await axios.get(`${baseURL}/tasks/${user.uid}`);
+        const res2 = await axios.get(`${baseURL}/ongoing/${user.uid}`);
+        const res3 = await axios.get(`${baseURL}/completed/${user.uid}`);
+        setData(res1.data);
+        setOngoing(res2.data);
+        setCompleted(res3.data);
       } catch (error) {
         console.log(error);
       } finally {
@@ -81,12 +188,17 @@ function Dashboard() {
     fetchData();
   }, [baseURL, user.uid]);
 
+  // after edit,delete,create we again fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const res = await axios.get(`${baseURL}/tasks/${user.uid}`);
-        setData(res.data);
+        const res1 = await axios.get(`${baseURL}/tasks/${user.uid}`);
+        const res2 = await axios.get(`${baseURL}/ongoing/${user.uid}`);
+        const res3 = await axios.get(`${baseURL}/completed/${user.uid}`);
+        setData(res1.data);
+        setOngoing(res2.data);
+        setCompleted(res3.data);
       } catch (error) {
         console.log(error);
       } finally {
@@ -235,82 +347,277 @@ function Dashboard() {
           )}
         </div>
         {/* pannel */}
-        <div
-          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3
+        <DragDropContext onDragEnd={handleDragDrop}>
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3
        md:gap-x-8 lg:gap-x-12 xl:gap-x-20 mt-16 xl:px-16 "
-        >
-          <Pannel title={"ToDo List"} className="col-span-1">
-            {data &&
-              data.map((task) => (
-                <div
-                  key={task._id}
-                  className="p-4 rounded-md bg-[#F87060] text-black"
-                >
-                  <div className="flex justify-between">
-                    <div className="font-bold text-xl">{task.title}</div>
-                    <div className="bg-[#173257] w-fit px-2 py-1 rounded-md text-white">
-                      {task.priority}
-                    </div>
-                  </div>
-                  <div>{task.deadline}</div>
-                  <div className="flex items-center justify-between mt-2">
-                    <div>details</div>
-                    <div className="flex space-x-1 items-center">
-                      <div>
-                        <img className="w-5 h-5" src="/edit.png" alt="" />
-                      </div>
-                      <div
-                        onClick={() => handleDelete(task._id)}
-                        className="hover:cursor-pointer hover:scale-125 active:scale-110 transition-all duration-150"
-                      >
-                        <img className="w-6 h-6" src="/delete.png" alt="" />
-                      </div>
-                    </div>
-                  </div>
+          >
+            <Droppable droppableId="tasks">
+              {(provided) => (
+                <div {...provided.droppableProps} ref={provided.innerRef}>
+                  <Pannel title={"ToDo List"} className="col-span-1">
+                    {data.length === 0 && (
+                      <div className="text-center mt-24">⛔ Data not found</div>
+                    )}
+                    {data &&
+                      data.map((task, index) => (
+                        <>
+                          <Draggable
+                            draggableId={task._id}
+                            key={task._id}
+                            index={index}
+                          >
+                            {(provided) => (
+                              <div
+                                {...provided.dragHandleProps}
+                                {...provided.draggableProps}
+                                ref={provided.innerRef}
+                                className="p-4 rounded-md bg-[#F87060] text-black"
+                              >
+                                <div className="flex justify-between">
+                                  <div className="font-bold text-xl">
+                                    {task.title}
+                                  </div>
+                                  <div className="bg-[#173257] w-fit px-2 py-1 rounded-md text-white">
+                                    {task.priority}
+                                  </div>
+                                </div>
+                                <div>{formatRemainingTime(task.deadline)}</div>
+                                <div className="flex items-center justify-between mt-2">
+                                  <div
+                                    onClick={() =>
+                                      document
+                                        .getElementById(`${task._id}`)
+                                        .showModal()
+                                    }
+                                    className="text-sm bg-[#173257] rounded-sm px-2 py-1 text-white cursor-pointer"
+                                  >
+                                    Description
+                                  </div>
+                                  <div className="flex space-x-1 items-center">
+                                    <div>
+                                      <img
+                                        className="w-5 h-5"
+                                        src="/edit.png"
+                                        alt=""
+                                      />
+                                    </div>
+                                    <div
+                                      onClick={() =>
+                                        handleDelete(task._id, "tasks")
+                                      }
+                                      className="hover:cursor-pointer hover:scale-125 active:scale-110 transition-all duration-150"
+                                    >
+                                      <img
+                                        className="w-6 h-6"
+                                        src="/delete.png"
+                                        alt=""
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                          {/* Modal */}
+                          <dialog id={task._id} className="modal text-zinc-950">
+                            <div className="modal-box bg-[#F87060]">
+                              <form method="dialog">
+                                {/* if there is a button in form, it will close the modal */}
+                                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                                  ✕
+                                </button>
+                              </form>
+                              <h3 className="font-bold text-xl">
+                                {task.title}
+                              </h3>
+                              <p className="py-4">{task.description}</p>
+                            </div>
+                          </dialog>
+                        </>
+                      ))}
+                  </Pannel>
                 </div>
-              ))}
-          </Pannel>
-          <Pannel title={"Ongoing List"} className="col-span-1">
-            {/* <div className="p-4 rounded-md bg-[#F87060] text-black">
-            <div className="flex justify-between">
-              <div className="font-bold text-xl">Assignment 8</div>
-              <div className="bg-[#173257] w-fit px-2 py-1 rounded-md text-white">
-                Low
-              </div>
-            </div>
-            <div>23 December</div>
+              )}
+            </Droppable>
+            <Droppable droppableId="ongoing">
+              {(provided) => (
+                <div {...provided.droppableProps} ref={provided.innerRef}>
+                  <Pannel title={"Ongoing List"} className="col-span-1">
+                    {ongoing.length === 0 && (
+                      <div className="text-center mt-24">⛔ Data not found</div>
+                    )}
+                    {ongoing &&
+                      ongoing.map((task, index) => (
+                        <>
+                          <Draggable
+                            draggableId={task._id}
+                            key={task._id}
+                            index={index}
+                          >
+                            {(provided) => (
+                              <div
+                                {...provided.dragHandleProps}
+                                {...provided.draggableProps}
+                                ref={provided.innerRef}
+                                className="p-4 rounded-md bg-[#F87060] text-black"
+                              >
+                                <div className="flex justify-between">
+                                  <div className="font-bold text-xl">
+                                    {task.title}
+                                  </div>
+                                  <div className="bg-[#173257] w-fit px-2 py-1 rounded-md text-white">
+                                    {task.priority}
+                                  </div>
+                                </div>
+                                <div>{formatRemainingTime(task.deadline)}</div>
+                                <div className="flex items-center justify-between mt-2">
+                                  <div
+                                    onClick={() =>
+                                      document
+                                        .getElementById(`${task._id}`)
+                                        .showModal()
+                                    }
+                                    className="text-sm bg-[#173257] rounded-sm px-2 py-1 text-white cursor-pointer"
+                                  >
+                                    Description
+                                  </div>
+                                  <div className="flex space-x-1 items-center">
+                                    <div>
+                                      <img
+                                        className="w-5 h-5"
+                                        src="/edit.png"
+                                        alt=""
+                                      />
+                                    </div>
+                                    <div
+                                      onClick={() =>
+                                        handleDelete(task._id, "ongoing")
+                                      }
+                                      className="hover:cursor-pointer hover:scale-125 active:scale-110 transition-all duration-150"
+                                    >
+                                      <img
+                                        className="w-6 h-6"
+                                        src="/delete.png"
+                                        alt=""
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                          {/* Modal */}
+                          <dialog id={task._id} className="modal text-zinc-950">
+                            <div className="modal-box bg-[#F87060]">
+                              <form method="dialog">
+                                {/* if there is a button in form, it will close the modal */}
+                                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                                  ✕
+                                </button>
+                              </form>
+                              <h3 className="font-bold text-xl">
+                                {task.title}
+                              </h3>
+                              <p className="py-4">{task.description}</p>
+                            </div>
+                          </dialog>
+                        </>
+                      ))}
+                  </Pannel>
+                </div>
+              )}
+            </Droppable>
+            <Droppable droppableId="completed">
+              {(provided) => (
+                <div {...provided.droppableProps} ref={provided.innerRef}>
+                  <Pannel title={"Completed List"} className="col-span-1">
+                    {completed.length === 0 && (
+                      <div className="text-center mt-24">⛔ Data not found</div>
+                    )}
+                    {completed &&
+                      completed.map((task, index) => (
+                        <>
+                          <Draggable
+                            draggableId={task._id}
+                            key={task._id}
+                            index={index}
+                          >
+                            {(provided) => (
+                              <div
+                                {...provided.dragHandleProps}
+                                {...provided.draggableProps}
+                                ref={provided.innerRef}
+                                className="p-4 rounded-md bg-[#F87060] text-black"
+                              >
+                                <div className="flex justify-between">
+                                  <div className="font-bold text-xl">
+                                    {task.title}
+                                  </div>
+                                  <div className="bg-[#173257] w-fit px-2 py-1 rounded-md text-white">
+                                    {task.priority}
+                                  </div>
+                                </div>
+                                <div>{formatRemainingTime(task.deadline)}</div>
+                                <div className="flex items-center justify-between mt-2">
+                                  <div
+                                    onClick={() =>
+                                      document
+                                        .getElementById(`${task._id}`)
+                                        .showModal()
+                                    }
+                                    className="text-sm bg-[#173257] rounded-sm px-2 py-1 text-white cursor-pointer"
+                                  >
+                                    Description
+                                  </div>
+                                  <div className="flex space-x-1 items-center">
+                                    <div>
+                                      <img
+                                        className="w-5 h-5"
+                                        src="/edit.png"
+                                        alt=""
+                                      />
+                                    </div>
+                                    <div
+                                      onClick={() =>
+                                        handleDelete(task._id, "completed")
+                                      }
+                                      className="hover:cursor-pointer hover:scale-125 active:scale-110 transition-all duration-150"
+                                    >
+                                      <img
+                                        className="w-6 h-6"
+                                        src="/delete.png"
+                                        alt=""
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                          {/* Modal */}
+                          <dialog id={task._id} className="modal text-zinc-950">
+                            <div className="modal-box bg-[#F87060]">
+                              <form method="dialog">
+                                {/* if there is a button in form, it will close the modal */}
+                                <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                                  ✕
+                                </button>
+                              </form>
+                              <h3 className="font-bold text-xl">
+                                {task.title}
+                              </h3>
+                              <p className="py-4">{task.description}</p>
+                            </div>
+                          </dialog>
+                        </>
+                      ))}
+                  </Pannel>
+                </div>
+              )}
+            </Droppable>
           </div>
-          <div className="p-4 rounded-md bg-[#F87060] text-black">
-            <div className="flex justify-between">
-              <div className="font-bold text-xl">Assignment 8</div>
-              <div className="bg-[#173257] w-fit px-2 py-1 rounded-md text-white">
-                Low
-              </div>
-            </div>
-            <div>23 December</div>
-          </div> */}
-          </Pannel>
-          <Pannel title={"Complited List"} className="col-span-1">
-            {/* <div className="p-4 rounded-md bg-[#F87060] text-black">
-            <div className="flex justify-between">
-              <div className="font-bold text-xl">Assignment 8</div>
-              <div className="bg-[#173257] w-fit px-2 py-1 rounded-md text-white">
-                Low
-              </div>
-            </div>
-            <div>23 December</div>
-          </div>
-          <div className="p-4 rounded-md bg-[#F87060] text-black">
-            <div className="flex justify-between">
-              <div className="font-bold text-xl">Assignment 8</div>
-              <div className="bg-[#173257] w-fit px-2 py-1 rounded-md text-white">
-                Low
-              </div>
-            </div>
-            <div>23 December</div>
-          </div> */}
-          </Pannel>
-        </div>
+        </DragDropContext>
       </div>
       <ToastContainer
         position="top-center"
