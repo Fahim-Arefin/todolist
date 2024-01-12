@@ -6,7 +6,7 @@ A task management system built with React and state management using React Conte
 
 🚀 Explore the live demo of the Task Management System by clicking [here](https://todolistwithdnd.web.app/). 🌐
 
-## Features
+## Features 📌
 
 - **Drag and Drop Interface:**
 
