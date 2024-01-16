@@ -25,4 +25,4 @@ A task management system built with React and state management using React Conte
   - Edit and delete tasks with ease using interactive buttons.
 
 - **Responsive Design:**
-  - Mobile-friendly design for task management on various devices.
+  - Mobile-friendly design for task management on various screen size.
