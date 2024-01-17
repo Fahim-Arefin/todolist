@@ -202,7 +202,7 @@ function Registration() {
             <div className="flex space-x-3 text-sm ">
               <span className="text-gray-400">Already have an account?</span>
               <Link to="/login" className="text-[#8d79e6]">
-                Go to login
+                Go To login
               </Link>
             </div>
           </div>
